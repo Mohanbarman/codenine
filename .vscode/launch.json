@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "auth service",
+      "runtimeArgs": [
+        "node_modules/@nrwl/cli/bin/nx.js",
+        "serve",
+        "auth-service",
+        "--port",
+        "4200"
+      ],
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "file service",
+      "runtimeArgs": [
+        "node_modules/@nrwl/cli/bin/nx.js",
+        "serve",
+        "file-service",
+        "--port",
+        "4201"
+      ],
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "api gateway",
+      "runtimeArgs": [
+        "node_modules/@nrwl/cli/bin/nx.js",
+        "serve",
+        "api-gateway",
+        "--port",
+        "4202"
+      ],
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+    }
+  ]
+}

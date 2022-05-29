@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/nx/schemas/workspace-schema.json",
+  "version": 2,
+  "projects": {
+    "api-gateway": "apps/api-gateway",
+    "auth-service": "apps/auth-service",
+    "file-service": "apps/file-service",
+    "nestlib": "libs/nestlib"
+  }
+}
