@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import * as bcrypt from 'bcrypt';
 
 export interface IUser {
   id: string;
@@ -10,8 +9,6 @@ export interface IUser {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date;
-
-  validatePassword(password: string): Promise<boolean>;
 }
 
 export type UserDocument = IUser & Document;
@@ -59,13 +56,5 @@ export const UserSchema = new mongoose.Schema({
     default: null,
   },
 });
-
-UserSchema.post('save', async (doc: UserDocument) => {
-  doc.password = await bcrypt.hash(doc.password, 10);
-});
-
-UserSchema.methods.validatePassword = async function (password: string) {
-  return await bcrypt.compare(password, this.password);
-};
 
 export const USER_SCHEMA = 'USER_SCHEMA';

@@ -2,11 +2,10 @@ import { registerAs } from '@nestjs/config';
 
 const namespace = 'db';
 
-export default registerAs(namespace, () => ({
+export const dbConfig = registerAs(namespace, () => ({
   uri: process.env.DB_URI,
 }));
 
-export interface IDatabaseConfig {
-  uri: string;
-}
-export type DatabaseConfigPath = `${typeof namespace}.${keyof IDatabaseConfig}`;
+export type DatabaseConfigPath = `${typeof namespace}.${keyof ReturnType<
+  typeof dbConfig
+>}`;

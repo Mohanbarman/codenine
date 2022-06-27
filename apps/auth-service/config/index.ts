@@ -1,6 +1,7 @@
-import databaseConfig, { DatabaseConfigPath } from './database.config';
-import natsConfig, { NatsConfigPath } from './nats.config';
+import { DatabaseConfigPath, dbConfig } from './database.config';
+import { NatsConfigPath, natsConfig } from './nats.config';
+import { JWTConfigPath, jwtConfig } from './jwt.config';
 
-export type TConfigPath = NatsConfigPath | DatabaseConfigPath;
+export type TConfigPath = NatsConfigPath | DatabaseConfigPath | JWTConfigPath;
 
-export default [natsConfig, databaseConfig];
+export default [natsConfig, dbConfig, jwtConfig];

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { AUTH_SERVICE_CLIENT } from '../constants';
-import { RegisterDTO } from './auth.dto';
+import { LoginDTO, RegisterDTO } from './auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -10,7 +10,18 @@ export class AuthService {
 
   async register(data: RegisterDTO): Promise<Record<string, unknown>> {
     const res = await firstValueFrom(this.client.send('auth.register', data));
-    console.log(res);
+    return res;
+  }
+
+  async login(data: LoginDTO): Promise<Record<string, unknown>> {
+    const res = await firstValueFrom(this.client.send('auth.login', data));
+    return res;
+  }
+
+  async getMe(data: string): Promise<Record<string, unknown>> {
+    const res = await firstValueFrom(
+      this.client.send('auth.getMe', { token: data })
+    );
     return res;
   }
 }

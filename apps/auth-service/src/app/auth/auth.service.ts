@@ -1,69 +1,97 @@
-import { Injectable } from '@nestjs/common';
-import { RpcException } from '@nestjs/microservices';
+import { buildRpcException, RpcExceptionSeverity } from '@codenine/nestlib';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { TConfigPath } from '../../../config';
 import * as jwt from 'jsonwebtoken';
 import { IUser } from '../user/user.schema';
 import { UserService } from '../user/user.service';
+import { UserTransformer } from '../../transformers';
+import { passwordManager } from '../../utilities';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly configService: ConfigService
+  ) {}
 
   async register(user: Partial<IUser>): Promise<IUser> {
-    if (await this.userService.getById(user.id)) {
-      throw new RpcException({
-        message: 'User already exists',
-        type: 'user_already_exists',
-        severity: 0,
+    Logger.debug('Registering user', user.email);
+    if (await this.userService.getByEmail(user.email)) {
+      Logger.debug('User already exists', user.email);
+      throw buildRpcException({
+        code: 'email_already_exists',
+        severity: RpcExceptionSeverity.LOW,
       });
     }
+    Logger.debug('User registered', user.email)
     return this.userService.create(user);
   }
 
-  async login(email: string, password: string): Promise<string> {
+  async login(email: string, password: string): Promise<Record<string, any>> {
     const user = await this.userService.getByEmail(email);
+    Logger.log('Login user', user.email);
     if (!user) {
-      throw new Error('User not found');
+      Logger.debug('User not found', user.email)
+      throw buildRpcException({
+        code: 'invalid_credentials',
+        severity: RpcExceptionSeverity.LOW,
+      });
     }
 
-    const isPasswordCorrect = await user.validatePassword(password);
+    const isPasswordCorrect = await passwordManager.compare(
+      password,
+      user.password
+    );
     if (!isPasswordCorrect) {
-      throw new Error('Invalid password');
+      Logger.debug('Wrong password', user.email)
+      throw buildRpcException({
+        code: 'invalid_credentials',
+        severity: RpcExceptionSeverity.LOW,
+      });
     }
 
-    const token = jwt.sign({ sub: user.id }, 'secret', { expiresIn: '1h' });
-    return token;
+    const jwtSecret = this.configService.get('jwt.secret' as TConfigPath);
+
+    const accessToken = jwt.sign(
+      { sub: user.id, scope: 'access_token' },
+      jwtSecret,
+      { expiresIn: '1h' }
+    );
+    const refreshToken = jwt.sign(
+      { sub: user.id, scope: 'refresh_token' },
+      jwtSecret,
+      { expiresIn: '7d' }
+    );
+
+    return { ...UserTransformer.serializeOne(user), accessToken, refreshToken };
   }
 
-  async getUserByToken(token: string): Promise<Partial<IUser>> {
+  async verifyToken(token: string): Promise<Record<string, unknown>> {
+    const jwtSecret = this.configService.get('jwt.secret' as TConfigPath);
+
+    let payload;
     try {
-      const payload: jwt.JwtPayload = await new Promise((resolve, reject) => {
-        jwt.verify(token, 'secret', (err, decoded) => {
-          if (err) reject(err);
-          if (typeof decoded == 'string') reject('Invalid token');
-          else resolve(decoded);
-        });
-      });
-
-      if (typeof payload == 'string') {
-        throw new Error('Invalid token');
-      }
-
-      if (!payload.sub) {
-        return null;
-      }
-
-      const user = await this.userService.getById(payload.sub.toString());
-
-      return {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        profilePicture: user.profilePicture,
-      };
+      payload = jwt.verify(token, jwtSecret);
     } catch (e) {
-      throw new Error('Invalid token');
+      console.log(e);
     }
+    if (typeof payload == 'string' || payload.scope != 'access_token') {
+      throw buildRpcException({
+        code: 'invalid_token',
+        severity: RpcExceptionSeverity.LOW,
+      });
+    }
+
+    const user = await this.userService.getById(payload.sub.toString());
+
+    if (!user) {
+      throw buildRpcException({
+        code: 'invalid_token',
+        severity: RpcExceptionSeverity.LOW,
+      });
+    }
+
+    return UserTransformer.serializeOne(user);
   }
 }

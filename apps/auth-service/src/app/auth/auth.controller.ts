@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern, RpcException } from '@nestjs/microservices';
+import { MessagePattern } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -8,25 +8,34 @@ export class AuthController {
 
   @MessagePattern('auth.register')
   async register(data: Record<string, unknown>) {
-    try {
-      const res = await this.authService.register({
-        email: data.email.toString(),
-        name: data.name.toString(),
-        password: data.password.toString(),
-        profilePicture: data.profilePicture?.toString(),
-      });
-      return {
-        data: {
-          id: res.id,
-          email: res.email,
-          name: res.name,
-          profilePicture: res.profilePicture,
-          createdAt: res.createdAt,
-          updatedAt: res.updatedAt,
-        },
-      };
-    } catch (e) {
-      throw new RpcException({ message: e.toString(), type: 'internal_error' });
-    }
+    const res = await this.authService.register({
+      email: data.email?.toString(),
+      name: data.name?.toString(),
+      password: data.password?.toString(),
+      profilePicture: data.profilePicture?.toString(),
+    });
+    return {
+      id: res.id,
+      email: res.email,
+      name: res.name,
+      profilePicture: res.profilePicture,
+      createdAt: res.createdAt,
+      updatedAt: res.updatedAt,
+    };
+  }
+
+  @MessagePattern('auth.login')
+  async login(data: Record<string, unknown>) {
+    const res = await this.authService.login(
+      data.email?.toString(),
+      data.password?.toString()
+    );
+    return res;
+  }
+
+  @MessagePattern('auth.getMe')
+  async getMe(data: Record<string, unknown>) {
+    const res = await this.authService.verifyToken(data.token?.toString());
+    return res;
   }
 }
